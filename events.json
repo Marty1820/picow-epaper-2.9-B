@@ -1,0 +1,17 @@
+[
+  {
+    "date": "aug-19",
+    "time": "08:00",
+    "info": "Basic info"
+  },
+  {
+    "date": "feb-17",
+    "time": "12:00",
+    "info": "Stay less than"
+  },
+  {
+    "date": "mar-27",
+    "time": "12:00",
+    "info": "15 characters"
+  }
+]
