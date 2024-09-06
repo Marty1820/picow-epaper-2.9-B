@@ -12,16 +12,16 @@ line_color = ["black"] * 28
 # Function to format event output
 def format_event_output(event_manager):
     if event_manager.next_fixed_event_time:
-        lines[0] = '   RECURRING   '
+        lines[0] = 'RECURRING'
         lines[1] = f'{event_manager.format_timestamp(event_manager.next_fixed_event_time)}'
     else:
-        lines[0] = '    HURRAY!    '
+        lines[0] = 'HURRAY!'
         lines[1] = 'ITS THE WEEKEND'
     line_color[1] = "red"
 
     if event_manager.next_event_time:
         event_time_tuple = time.localtime(event_manager.next_event_time)
-        lines[3] = '    EVENTS    '
+        lines[3] = 'EVENTS'
         lines[4] = f'{event_manager.format_time(event_time_tuple)}'
         lines[5] = f'{event_manager.next_event_info}'
         line_color[4] = 'red'
@@ -29,8 +29,8 @@ def format_event_output(event_manager):
     else:
         lines[3] = 'NO EVENTS TODAY'
         line_color[3] = 'red'
-        lines[4] = '    HAVE A     '
-        lines[5] = ' WONDERFUL DAY '
+        lines[4] = 'HAVE A'
+        lines[5] = 'WONDERFUL DAY'
 
     lines[26] = ' LAST REFRESH '
     lines[27] = get_current_datetime(local_timezone)
@@ -74,6 +74,14 @@ def set_line(index, text, color="black"):
         lines[index] = text
         line_color[index] = color
 
+def centered_lines(lines):
+    centered_strings = []
+    for s in lines:
+        # Center each string to a width of 15 characters
+        centered = s.center(15)
+        centered_strings.append(centered)
+    return centered_strings
+
 if __name__ == "__main__":
     # Configuration
     country = Secrets.WiFiCOUNTRY
@@ -114,8 +122,10 @@ if __name__ == "__main__":
         set_line(8, "This is red", color="red")
         set_line(9, "THIS MAX LENGTH")
 
+        # Center text at 15 characters
+        center_lines = centered_lines(lines)
         # Send data to display for update
-        update_display(e_paper, lines, line_color)
+        update_display(e_paper, center_lines, line_color)
 
         led.off()
 
