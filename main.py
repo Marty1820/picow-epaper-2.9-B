@@ -8,6 +8,9 @@ import EPD_2in9_B as epd
 # Initialize lines and line color globally
 lines = [""] * 28
 line_color = ["black"] * 28
+month_abbreviations = ["Jan", "Feb", "Mar", "Apr",
+                       "May", "Jun", "Jul", "Aug",
+                       "Sep", "Oct", "Nov", "Dec"]
 
 # Function to format event output
 def format_event_output(event_manager):
@@ -32,15 +35,14 @@ def format_event_output(event_manager):
         lines[4] = 'HAVE A'
         lines[5] = 'WONDERFUL DAY'
 
-    lines[26] = ' LAST REFRESH '
-    lines[27] = get_current_datetime(local_timezone)
-    line_color[27] = 'red'
+    get_current_datetime(local_timezone)
 
     return lines, line_color
 
 # Function to display on the e-ink screen
 def update_display(e_paper, lines, line_colors):
     e_paper.__init__()
+    e_paper.Clear
     color_map = {
         "black": e_paper.imageblack,
         "red": e_paper.imagered
@@ -64,9 +66,24 @@ def get_current_datetime(timezone_offset):
     hour = adjusted_hour % 12
     hour = 12 if hour == 0 else hour
     period = 'AM' if adjusted_hour < 12 else 'PM'
+
+    # Get the month abbreviation
+    month_abbr = month_abbreviations[current_time[1] -1]
+
+    # Format date with month abbreviation
+    formatted_date = "{} {:02}".format(month_abbr, current_time[2])
     formatted_time = "{:02}:{:02} {}".format(hour, current_time[4], period)
+
+    print("Current date:", formatted_date)
     print("Current local formatted time:", formatted_time)
-    return formatted_time
+    #return formatted_time, formatted_date
+
+    lines[24] = 'TODAYS DATE'
+    lines[25] = formatted_date
+    line_color[25] = 'red'
+    lines[26] = 'LAST REFRESH'
+    lines[27] = formatted_time
+    line_color[27] = 'red'
 
 # Function to set a specific line
 def set_line(index, text, color="black"):
@@ -105,8 +122,6 @@ if __name__ == "__main__":
     network_manager.connect()
     ntp_manager.sync()
 
-    #data_import()
-
     while True:
         led.on()
         # Recalculate events and display data
@@ -115,7 +130,7 @@ if __name__ == "__main__":
         )
         formatted_lines = format_event_output(event_manager)
 
-        # Lines 6-25 can be used
+        # Lines 6-23 can be used
         # Max length of 15 characters or it runs off display
         # ex `set_line(LINE_NUMBER, "TEXT", color="COLOR")`
         set_line(7, "This is black")

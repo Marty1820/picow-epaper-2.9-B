@@ -1,6 +1,5 @@
-# Thanks to `https://github.com/sbcshop/EnkPi_2.9_Software`
-# for a much better way of updating display and allowing colors
-# library of 2.9 inch e paper
+# Original source
+# https://github.com/waveshareteam/Pico_ePaper_Code/blob/main/python/Pico_ePaper-2.9-B.py
 from machine import Pin, SPI
 import framebuf
 import utime
@@ -69,6 +68,12 @@ class E_paper:
         self.spi_writebyte([data])
         self.digital_write(self.cs_pin, 1)
 
+    def send_data1(self, buf):
+        self.digital_write(self.dc_pin, 1)
+        self.digital_write(self.cs_pin, 0)
+        self.spi.write(bytearray(buf))
+        self.digital_write(self.cs_pin, 1)
+
     def ReadBusy(self):
         print('busy')
         self.send_command(0x71)
@@ -80,7 +85,6 @@ class E_paper:
     def TurnOnDisplay(self):
         self.send_command(0x12)
         self.ReadBusy()
-        print('Display On')
 
     def init(self):
         print('init')
@@ -104,13 +108,19 @@ class E_paper:
 
     def display(self):
         self.send_command(0x10)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(self.buffer_black[i + j * int(self.width / 8)])
+        self.send_data1(self.buffer_black)
+
         self.send_command(0x13)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(self.buffer_red[i + j * int(self.width / 8)])
+        self.send_data1(self.buffer_red)
+
+        self.TurnOnDisplay()
+
+    def Clear(self, colorblack, colorred):
+        self.send_command(0x10)
+        self.send_data1([colorblack] * self.height * int(self.width / 8))
+
+        self.send_command(0x13)
+        self.send_data1([colorred] * self.height * int(self.width / 8))
 
         self.TurnOnDisplay()
 
@@ -119,8 +129,6 @@ class E_paper:
         self.ReadBusy()
         self.send_command(0X07) # deep sleep
         self.send_data(0xA5)
-
-        print('Display Sleep')
 
         self.delay_ms(2000)
         self.module_exit()
