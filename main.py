@@ -61,22 +61,30 @@ def update_display(e_paper, lines, line_colors):
 
 # Function to get the current datetime formatted
 def get_current_datetime(timezone_offset):
-    current_time = time.localtime()
-    adjusted_hour = (current_time[3] + timezone_offset) % 24
+    # Get the current local time
+    local_time = time.localtime() # Return tuple
+
+    # Adjust hours based on timezone offset
+    adjusted_hour = (local_time[3] + timezone_offset) % 24
+
+    # Handle cases where the hour adjustment might affect the day
+    day_adjustment = (local_time[3] + timezone_offset) // 24
+    adjusted_day = local_time[2] + day_adjustment
+
+    # Determine the period (AM/PM) and adjust hour for 12-hour format
     hour = adjusted_hour % 12
     hour = 12 if hour == 0 else hour
     period = 'AM' if adjusted_hour < 12 else 'PM'
 
     # Get the month abbreviation
-    month_abbr = month_abbreviations[current_time[1] -1]
+    month_abbr = month_abbreviations[local_time[1] -1]
 
     # Format date with month abbreviation
-    formatted_date = "{} {:02}".format(month_abbr, current_time[2])
-    formatted_time = "{:02}:{:02} {}".format(hour, current_time[4], period)
+    formatted_date = "{} {:02}".format(month_abbr, adjusted_day)
+    formatted_time = "{:02}:{:02} {}".format(hour, local_time[4], period)
 
     print("Current date:", formatted_date)
     print("Current local formatted time:", formatted_time)
-    #return formatted_time, formatted_date
 
     lines[24] = 'TODAYS DATE'
     lines[25] = formatted_date
