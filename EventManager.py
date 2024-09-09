@@ -1,7 +1,7 @@
 import utime as time
 import json
 
-# Event Manager class for managing and finding events
+# Class to manager and find events from JSON files
 class EventManager:
     month_map = {
         'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4,
@@ -9,6 +9,7 @@ class EventManager:
         'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
     }
 
+    # Initialize the EventManager with file paths and timezone offset
     def __init__(self, file_path, fixed_events_path, timezone_offset=0):
         self.file_path = file_path
         self.fixed_events_path = fixed_events_path
@@ -19,11 +20,13 @@ class EventManager:
         self.next_event_info = None
         self.next_fixed_event_time = None
 
+        # Load events and find the next upcoming event
         self.load_events()
         self.load_fixed_events()
         self.find_next_event()
         self.find_next_fixed_event()
 
+    # Convert date and time strings into a timestamp
     def parse_datetime(self, date_str, time_str):
         month_str, day = date_str.split('-')
         month = self.month_map.get(month_str.lower())
@@ -36,9 +39,9 @@ class EventManager:
         current_year = now[0]
         local_time = (current_year, month, day, hour, minute, 0, 0, 0, -1)
 
-        # Convert local time to timestamp
         return time.mktime(local_time)
 
+    # Load events from the specified file and parse them
     def load_events(self):
         try:
             with open(self.file_path, 'r') as file:
@@ -52,6 +55,7 @@ class EventManager:
         except (OSError, ValueError) as e:
             print(f"Error loading events: {e}")
 
+    # Load fixed events from the specified file and parse them
     def load_fixed_events(self):
         try:
             with open(self.fixed_events_path, 'r') as file:
@@ -90,6 +94,7 @@ class EventManager:
         except (OSError, ValueError) as e:
             print(f"Error loading fixed events: {e}")
 
+    # Find the next upcoming event from the loaded events
     def find_next_event(self):
         now = time.localtime()
         current_time = time.mktime((
@@ -106,6 +111,7 @@ class EventManager:
         print(f'Next Event: {self.next_event_info}')
         print(f'Next Event Time: {self.next_event_time}')
 
+    # Find the next fixed event from the loaded fixed events
     def find_next_fixed_event(self):
         now = time.localtime()
         current_time = time.mktime((
@@ -117,6 +123,7 @@ class EventManager:
         self.next_fixed_event_time = min(today_events, default=None)
         print(f'Next Fixed Event Time: {self.next_fixed_event_time}')
 
+    # Format a time tuple into a 12-hour time string
     def format_time(self, time_tuple):
         hour = time_tuple[3]
         minute = time_tuple[4]
@@ -125,11 +132,13 @@ class EventManager:
         hour = 12 if hour == 0 else hour
         return "{:02}:{:02} {}".format(hour, minute, period)
 
+    # Format a timestamp into a 12-hour time string
     def format_timestamp(self, timestamp):
         if not isinstance(timestamp, int):
             raise TypeError(f"Expected integer timestamp, got: {timestamp}")
         return self.format_time(time.localtime(timestamp))
 
+    # Print details of the next upcoming event and fixed event
     def print_upcoming_events(self):
         if self.next_event_time:
             event_time_tuple = time.localtime(self.next_event_time)
