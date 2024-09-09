@@ -3,9 +3,9 @@
 This repository contains MicroPython scripts for managing various functionalities using a Raspberry Pi Pico. The scripts include:
 
 - **Network Manager**: Connects to a Wi-Fi network and handles network-related operations.
-- **NTP Manager**: Synchonizes time with an NTP server.
-- **Event Manager**: Managers the displays upcoming events.
-- **E-Paper Display**: Controls a 2.9-inch e-paper display for showing infomration.
+- **NTP Manager**: Synchronizes time with an NTP server.
+- **Event Manager**: Manages the displays upcoming events.
+- **E-Paper Display**: Controls a 2.9-inch e-paper display for showing information.
 
 ## Files
 
@@ -17,11 +17,11 @@ This repository contains MicroPython scripts for managing various functionalitie
 
 - Raspberry Pi Pico or compatible board.
 - Required libraries: `network`, `ntptime`, `rp2`, `machine`, `utime`, `framebuf`.
-- For the e-paper display: SPI interface and proper wireing to the display.
+- For the e-paper display: SPI interface and proper wiring to the display.
 
 ## Setup
 
-1. **Clone the reporistory:**
+1. **Clone the repository:**
 
    ```
    sh
@@ -50,4 +50,4 @@ This repository contains MicroPython scripts for managing various functionalitie
 
 ---
 
-Fell free to open an issue or submit a pull request if you encounter any problems or have suggestions for imporovements.
+Feel free to open an issue or submit a pull request if you encounter any problems or have suggestions for improvements.
