@@ -8,67 +8,80 @@ import EPD_2in9_B as epd
 # Global variables for display lines and their colors
 lines = [""] * 28
 line_color = ["black"] * 28
-month_abbreviations = ["Jan", "Feb", "Mar", "Apr",
-                       "May", "Jun", "Jul", "Aug",
-                       "Sep", "Oct", "Nov", "Dec"]
+month_abbreviations = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]
+
 
 # Function to format event data for display
 def format_event_output(event_manager):
     # Format lines for the next fixed event or weekend
     if event_manager.next_fixed_event_time:
-        lines[0] = 'RECURRING'
-        lines[1] = f'{event_manager.format_timestamp(event_manager.next_fixed_event_time)}'
+        lines[0] = "RECURRING"
+        lines[1] = (
+            f"{event_manager.format_timestamp(event_manager.next_fixed_event_time)}"
+        )
     else:
-        lines[0] = 'HURRAY!'
-        lines[1] = 'ITS THE WEEKEND'
+        lines[0] = "HURRAY!"
+        lines[1] = "ITS THE WEEKEND"
     line_color[1] = "red"
 
     # Format lines for the next event if it exists
     if event_manager.next_event_time:
         event_time_tuple = time.localtime(event_manager.next_event_time)
-        lines[3] = 'EVENTS'
-        lines[4] = f'{event_manager.format_time(event_time_tuple)}'
-        lines[5] = f'{event_manager.next_event_info}'
-        line_color[4] = 'red'
-        line_color[5] = 'red'
+        lines[3] = "EVENTS"
+        lines[4] = f"{event_manager.format_time(event_time_tuple)}"
+        lines[5] = f"{event_manager.next_event_info}"
+        line_color[4] = "red"
+        line_color[5] = "red"
     else:
-        lines[3] = 'NO EVENTS TODAY'
-        line_color[3] = 'red'
-        lines[4] = 'HAVE A'
-        lines[5] = 'WONDERFUL DAY'
+        lines[3] = "NO EVENTS TODAY"
+        line_color[3] = "red"
+        lines[4] = "HAVE A"
+        lines[5] = "WONDERFUL DAY"
 
     # Get and format the current date and time
     get_current_datetime(local_timezone)
 
     return lines, line_color
 
+
 # Function to update the e-paper display with the given lines and colors
 def update_display(e_paper, lines, line_colors):
-    e_paper.__init__() # Initialize e-paper display
-    e_paper.Clear # Clear previous content
+    e_paper.__init__()  # Initialize e-paper display
+    e_paper.Clear  # Clear previous content
 
     # Map colors to e-paper image objects
-    color_map = {
-        "black": e_paper.imageblack,
-        "red": e_paper.imagered
-    }
+    color_map = {"black": e_paper.imageblack, "red": e_paper.imagered}
 
     # Clear display
-    e_paper.imageblack.fill(0xff)
-    e_paper.imagered.fill(0xff)
+    e_paper.imageblack.fill(0xFF)
+    e_paper.imagered.fill(0xFF)
 
     # Draw each line with its specified color
     for i, (line, color) in enumerate(zip(lines, line_colors)):
-        image_obj = color_map.get(color, e_paper.imageblack) # Default to black
-        image_obj.text(line, 5, 10 + i * 10, 0x00) # Text, x, y, color
+        image_obj = color_map.get(color, e_paper.imageblack)  # Default to black
+        image_obj.text(line, 5, 10 + i * 10, 0x00)  # Text, x, y, color
 
-    e_paper.display() # Update the display
-    e_paper.sleep() # Put the display to sleep
+    e_paper.display()  # Update the display
+    e_paper.sleep()  # Put the display to sleep
+
 
 # Function to formate current date and time, adjusting for the timezone offset
 def get_current_datetime(timezone_offset):
     # Get the current local time
-    local_time = time.localtime() # Return tuple
+    local_time = time.localtime()  # Return tuple
 
     # Adjust hours based on timezone offset
     adjusted_hour = (local_time[3] + timezone_offset) % 24
@@ -78,10 +91,10 @@ def get_current_datetime(timezone_offset):
     # Determine (AM/PM) period and adjust hour for 12-hour format
     hour = adjusted_hour % 12
     hour = 12 if hour == 0 else hour
-    period = 'AM' if adjusted_hour < 12 else 'PM'
+    period = "AM" if adjusted_hour < 12 else "PM"
 
     # Get the month abbreviation
-    month_abbr = month_abbreviations[local_time[1] -1]
+    month_abbr = month_abbreviations[local_time[1] - 1]
 
     # Format date and time
     formatted_date = "{} {:02}".format(month_abbr, adjusted_day)
@@ -92,12 +105,13 @@ def get_current_datetime(timezone_offset):
     print("Current local formatted time:", formatted_time)
 
     # Update lines with the formatted date and time
-    lines[24] = 'TODAYS DATE'
+    lines[24] = "TODAYS DATE"
     lines[25] = formatted_date
-    line_color[25] = 'red'
-    lines[26] = 'LAST REFRESH'
+    line_color[25] = "red"
+    lines[26] = "LAST REFRESH"
     lines[27] = formatted_time
-    line_color[27] = 'red'
+    line_color[27] = "red"
+
 
 # Function to set a specific line of text and its color.
 def set_line(index, text, color="black"):
@@ -105,9 +119,11 @@ def set_line(index, text, color="black"):
         lines[index] = text
         line_color[index] = color
 
+
 # Function Center each line of text to a width of 15 characters.
 def centered_lines(lines):
     return [s.center(15) for s in lines]
+
 
 if __name__ == "__main__":
     # Configuration from Secrets.py
@@ -152,5 +168,5 @@ if __name__ == "__main__":
         led.off()
 
         # Wait for next update
-        print(f'Waiting {update_interval} seconds for next update')
+        print(f"Waiting {update_interval} seconds for next update")
         time.sleep(update_interval)

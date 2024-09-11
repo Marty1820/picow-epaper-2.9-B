@@ -1,12 +1,22 @@
 import utime as time
 import json
 
+
 # Class to manager and find events from JSON files
 class EventManager:
     month_map = {
-        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4,
-        'may': 5, 'jun': 6, 'jul': 7, 'aug': 8,
-        'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+        "jan": 1,
+        "feb": 2,
+        "mar": 3,
+        "apr": 4,
+        "may": 5,
+        "jun": 6,
+        "jul": 7,
+        "aug": 8,
+        "sep": 9,
+        "oct": 10,
+        "nov": 11,
+        "dec": 12,
     }
 
     # Initialize the EventManager with file paths and timezone offset
@@ -28,12 +38,12 @@ class EventManager:
 
     # Convert date and time strings into a timestamp
     def parse_datetime(self, date_str, time_str):
-        month_str, day = date_str.split('-')
+        month_str, day = date_str.split("-")
         month = self.month_map.get(month_str.lower())
         if month is None:
             raise ValueError(f"Unknown month abbreviation: {month_str}")
         day = int(day)
-        hour, minute = map(int, time_str.split(':'))
+        hour, minute = map(int, time_str.split(":"))
 
         now = time.localtime()
         current_year = now[0]
@@ -44,12 +54,12 @@ class EventManager:
     # Load events from the specified file and parse them
     def load_events(self):
         try:
-            with open(self.file_path, 'r') as file:
+            with open(self.file_path, "r") as file:
                 events_data = json.load(file)
                 for event in events_data:
-                    date_str = event['date']
-                    time_str = event['time']
-                    info = event['info']
+                    date_str = event["date"]
+                    time_str = event["time"]
+                    info = event["info"]
                     event_time = self.parse_datetime(date_str, time_str)
                     self.events.append((event_time, info.strip()))
         except (OSError, ValueError) as e:
@@ -58,17 +68,22 @@ class EventManager:
     # Load fixed events from the specified file and parse them
     def load_fixed_events(self):
         try:
-            with open(self.fixed_events_path, 'r') as file:
+            with open(self.fixed_events_path, "r") as file:
                 fixed_events_data = json.load(file)
                 now = time.localtime()
                 current_year = now[0]
                 current_month = now[1]
                 current_day = now[2]
-                current_weekday = now[6] # Monday is 0 and Sunday is 6
+                current_weekday = now[6]  # Monday is 0 and Sunday is 6
 
             day_map = {
-                'Mon': 0, 'Tue': 1, 'Wed': 2,
-                'Thu': 3, 'Fri': 4, 'Sat': 5, 'Sun': 6
+                "Mon": 0,
+                "Tue": 1,
+                "Wed": 2,
+                "Thu": 3,
+                "Fri": 4,
+                "Sat": 5,
+                "Sun": 6,
             }
 
             for day_entry in fixed_events_data:
@@ -78,15 +93,25 @@ class EventManager:
                     target_day = day_map[day_name]
 
                     for time_of_day, time_str in times.items():
-                        hour, minute = map(int, time_str.split(':'))
+                        hour, minute = map(int, time_str.split(":"))
                         days_until_target = (target_day - current_weekday + 7) % 7
-                        days_until_target = max(days_until_target, 0) # Ensure non-negative
+                        days_until_target = max(
+                            days_until_target, 0
+                        )  # Ensure non-negative
 
-                        event_date_local = time.mktime((
-                            current_year, current_month,
-                            current_day + days_until_target,
-                            hour, minute, 0, 0, 0, -1
-                        ))
+                        event_date_local = time.mktime(
+                            (
+                                current_year,
+                                current_month,
+                                current_day + days_until_target,
+                                hour,
+                                minute,
+                                0,
+                                0,
+                                0,
+                                -1,
+                            )
+                        )
                         self.fixed_event_times.append(event_date_local)
 
             self.fixed_event_times.sort()
@@ -97,37 +122,45 @@ class EventManager:
     # Find the next upcoming event from the loaded events
     def find_next_event(self):
         now = time.localtime()
-        current_time = time.mktime((
-            now[0], now[1], now[2], now[3], now[4], 0, 0, 0, -1
-        )) + (self.timezone_offset * 3600)
+        current_time = time.mktime(
+            (now[0], now[1], now[2], now[3], now[4], 0, 0, 0, -1)
+        ) + (self.timezone_offset * 3600)
 
         today_events = [
-            event for event in self.events if event[0] >= current_time and
-            time.localtime(event[0])[0:3] == (now[0], now[1], now[2])
+            event
+            for event in self.events
+            if event[0] >= current_time
+            and time.localtime(event[0])[0:3] == (now[0], now[1], now[2])
         ]
 
         if today_events:
-            self.next_event_time, self.next_event_info = min(today_events, key=lambda x: x[0])
-        print(f'Next Event: {self.next_event_info}')
-        print(f'Next Event Time: {self.next_event_time}')
+            self.next_event_time, self.next_event_info = min(
+                today_events, key=lambda x: x[0]
+            )
+        print(f"Next Event: {self.next_event_info}")
+        print(f"Next Event Time: {self.next_event_time}")
 
     # Find the next fixed event from the loaded fixed events
     def find_next_fixed_event(self):
         now = time.localtime()
-        current_time = time.mktime((
-            now[0], now[1], now[2], now[3], now[4], 0, 0, 0, -1
-        )) + (self.timezone_offset * 3600)
+        current_time = time.mktime(
+            (now[0], now[1], now[2], now[3], now[4], 0, 0, 0, -1)
+        ) + (self.timezone_offset * 3600)
 
-        today_events = [event for event in self.fixed_event_times if current_time <= event < current_time + 86400]
+        today_events = [
+            event
+            for event in self.fixed_event_times
+            if current_time <= event < current_time + 86400
+        ]
 
         self.next_fixed_event_time = min(today_events, default=None)
-        print(f'Next Fixed Event Time: {self.next_fixed_event_time}')
+        print(f"Next Fixed Event Time: {self.next_fixed_event_time}")
 
     # Format a time tuple into a 12-hour time string
     def format_time(self, time_tuple):
         hour = time_tuple[3]
         minute = time_tuple[4]
-        period = 'AM' if hour < 12 else 'PM'
+        period = "AM" if hour < 12 else "PM"
         hour = hour % 12
         hour = 12 if hour == 0 else hour
         return "{:02}:{:02} {}".format(hour, minute, period)
