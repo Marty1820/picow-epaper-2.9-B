@@ -1,0 +1,45 @@
+# Centralized configuration for the Weather/AQI Station
+
+# --- Network & Time ---
+SSID = "NAME_OF_WIFI"
+PASSWORD = "WIFI_PASSWORD"
+OFFSET_HOURS = 0  # UTC offset in hours
+
+# --- API Keys & Endpoints ---
+# WARNING: In a real production environment, consider using secure storage
+# or environment variables if your platform supports it, rather than plain text.
+OPENWEATHER_API_KEY = "Get from https://home.openweathermap.org/api_keys"
+AQICN_API_KEY = "https://aqicn.org/json-api/doc/"  # Note: Checked original, kept as is
+AQICN_CITY_ID = "NUMBER"  # Using ID instead of city name for reliability
+
+# Coordinates (Latitude, Longitude)
+LAT = 0.00000
+LON = 0.00000
+
+# --- Display & Thresholds ---
+# Thresholds for highlighting metrics in RED
+# Key: API key name, Value: {'label': Display string, 'threshold': Trigger value}
+THRESHOLDS = {
+    "co":   {"label": "CO     : ", "threshold": 35},
+    "no2":  {"label": "NO2    : ", "threshold": 200},
+    "o3":   {"label": "O3     : ", "threshold": 160},
+    "pm10": {"label": "PM10   : ", "threshold": 80},
+    "pm25": {"label": "PM2.5  : ", "threshold": 30},
+    "so2":  {"label": "SO2    : ", "threshold": 270},
+}
+
+TOTAL_AQI_THRESHOLD = 100
+
+# --- Timing ---
+UPDATE_INTERVAL_SECONDS = 3600  # 1 hour
+RETRY_DELAY_SECONDS = 30  # Wait time on failure
+TIMEOUT_SECONDS = 30  # WiFi connection timeout
+
+# --- Hardware Pins (Optional: Move to hardware_config if you swap screens) ---
+# Keeping these here for now as they are specific to the Waveshare driver used
+RST_PIN = 12
+DC_PIN = 8
+CS_PIN = 9
+BUSY_PIN = 13
+SPI_BUS = 1
+SPI_BAUDRATE = 4000_000
