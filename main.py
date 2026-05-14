@@ -2,7 +2,6 @@
 # Orchestrates network, data fetching, and display logic
 
 import utime
-import sys
 from config import UPDATE_INTERVAL_SECONDS, RETRY_DELAY_SECONDS, OFFSET_HOURS
 from network_api import connect_wifi, disconnect_wifi, sync_clock, fetch_all_data
 from display_driver import EPD_2in9_B
@@ -56,19 +55,11 @@ def main_loop():
             print(f"Sleeping for {UPDATE_INTERVAL_SECONDS} seconds...")
             utime.sleep(UPDATE_INTERVAL_SECONDS)
 
-        except KeyboardInterrupt:
-            print("\nInterrupted by user. Shutting down gracefully.")
-            try:
-                if "epd" in locals():
-                    epd.sleep()
-            except Exception:
-                pass
-            sys.exit(0)
         except Exception as e:
             log_error(f"Critical Error: {e}")
 
             # Attempt to recover
-            print("Attempting recovery in 60s...")
+            print(f"Attempting recovery in {RETRY_DELAY_SECONDS}s...")
             try:
                 # Try to put display to sleep if it was initialized
                 if "epd" in locals():
