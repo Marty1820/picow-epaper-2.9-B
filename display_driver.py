@@ -36,7 +36,7 @@ class EPD_2in9_B:
 
         # Initialize SPI
         self.spi = SPI(1)
-        self.spi.init(baudrate=4000_000)
+        self.spi.init(baudrate=4_000_000)
         self.dc_pin = Pin(DC_PIN, Pin.OUT)
 
         # Initialize Buffers (Black and Red)
