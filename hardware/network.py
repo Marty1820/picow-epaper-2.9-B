@@ -19,13 +19,13 @@ def connect_wifi(ssid, password, timeout=30):
     Returns:
         network.WLAN: WLAN object if successful, None otherwise.
     """
-    print(f"[WiFi] Connecting to {ssid}...")
+    print(f"[NET] Connecting to {ssid}...")
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
 
     if wlan.isconnected():
         ip = wlan.ifconfig()[0]
-        print(f"[WiFi] Already connected. IP: {ip}")
+        print(f"[NET] Already connected. IP: {ip}")
         return wlan
 
     wlan.connect(ssid, password)
@@ -33,13 +33,13 @@ def connect_wifi(ssid, password, timeout=30):
     start_time = utime.time()
     while not wlan.isconnected():
         if utime.time() - start_time > timeout:
-            print("[WiFi] Connection timed out.")
+            print("[NET] Connection timed out.")
             return None
 
         utime.sleep(1)
 
     ip = wlan.ifconfig()[0]
-    print(f"[WiFi] Connected! IP: {ip}")
+    print(f"[NET] Connected! IP: {ip}")
     return wlan
 
 
@@ -53,7 +53,7 @@ def disconnect_wifi(wlan):
     if wlan:
         wlan.disconnect()
         wlan.active(False)
-        print("[WiFi] Disconnected.")
+        print("[NET] Disconnected.")
 
 
 def sync_clock():
@@ -63,16 +63,16 @@ def sync_clock():
         bool: True on success, False on failure.
     """
     try:
-        print("[Time] Syncing with NTP...")
+        print("[NET] Syncing with NTP...")
         ntptime.settime()
         t = time.localtime()
         print(
-            f"[Time] Synced: {t[0]}-{t[1]:02d}-{t[2]:02d} "
+            f"[NET] Synced: {t[0]}-{t[1]:02d}-{t[2]:02d} "
             f"{t[3]:02d}:{t[4]:02d}:{t[5]:02d}"
         )
         return True
     except Exception as e:
-        print(f"[Time] Sync failed: {e}")
+        print(f"[NET] Sync failed: {e}")
         return False
 
 
@@ -97,5 +97,5 @@ def get_local_time(offset_hours=0):
 
         return daystamp, timestamp
     except Exception as e:
-        print(f"[Time] Get local time failed: {e}")
+        print(f"[NET] Get local time failed: {e}")
         return "Unknown", "Unknown"

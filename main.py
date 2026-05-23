@@ -97,7 +97,7 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
 
     # Refresh display
     epd.render()
-    print("[Display] Render complete.")
+    print("[MAIN] Render complete")
 
 
 def main_loop():
@@ -109,24 +109,20 @@ def main_loop():
             # 1. Network Connection
             wlan = connect_wifi(SSID, PASSWORD)
             if not wlan:
-                print("No WiFi. Retrying in 60s...")
+                print("[MAIN] No Wi-Fi. Retrying in 60s...")
                 utime.sleep(RETRY_DELAY_SECONDS)
                 continue
 
             # 2. Time Synchronization
             if not sync_clock():
-                print(
-                    "Time sync failed. Proceeding with system time (may be inaccurate)."
-                )
+                print("[MAIN] Time sync failed using system time.")
 
             # 3. Fetch Data
-            print("Fetching data...")
+            print("[MAIN] Fetching data...")
             weather_raw, aqi_raw = fetch_all_data()
 
             if not weather_raw or not aqi_raw:
-                print(
-                    "Warning: Failed to fetch one or both datasets. Skipping display update."
-                )
+                print("[WARN] Failed to fetch data skipping display update.")
                 utime.sleep(UPDATE_INTERVAL_SECONDS)
                 continue
 
@@ -135,7 +131,7 @@ def main_loop():
             aqi_data = format_aqi_display(aqi_raw)
 
             # 5. Initialize Display & Render
-            print("Initializing display...")
+            print("[MAIN] Init display")
             epd = EPD_2in9_B()
             render_display(epd, weather_data, aqi_data, OFFSET_HOURS)
 
@@ -143,14 +139,14 @@ def main_loop():
             epd.sleep()
             disconnect_wifi(wlan)  # Save power by turning off radio
 
-            print(f"Sleeping for {UPDATE_INTERVAL_SECONDS} seconds...")
+            print(f"[MAIN] Sleeping {UPDATE_INTERVAL_SECONDS} secs")
             utime.sleep(UPDATE_INTERVAL_SECONDS)
 
         except Exception as e:
             log_error(f"Critical Error: {e}")
 
             # Attempt to recover
-            print(f"Attempting recovery in {RETRY_DELAY_SECONDS}s...")
+            print(f"[MAIN] Attempt recovery in {RETRY_DELAY_SECONDS}secs")
             try:
                 # Try to put display to sleep if it was initialized
                 if "epd" in locals():

@@ -76,7 +76,7 @@ def format_weather_display(weather_data):
             "wind_speed": current["wind_speed"],
         }
     except KeyError as e:
-        print(f"[Weather] Missing key: {e}")
+        print(f"[WEATHER] Missing key: {e}")
         return None
 
 
@@ -103,5 +103,5 @@ def format_aqi_display(aqi_data):
             "iaqi": aqi_data_inner.get("iaqi", {}),
         }
     except (KeyError, TypeError) as e:
-        print(f"[AQI] Parse error: {e}")
+        print(f"[WEATHER] Parse error: {e}")
         return None

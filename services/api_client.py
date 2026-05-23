@@ -15,7 +15,7 @@ def fetch_json(url, timeout=10):
         dict or None: Parsed JSON data on success, None on failure
     """
     try:
-        print(f"[[API] Fetching: {url}")
+        print(f"[API] Fetching: {url}")
         response = urequests.get(url, timeout=timeout)
 
         if response.status_code == 200:
@@ -43,7 +43,7 @@ def fetch_text(url, timeout=10):
         dict or None: Parsed JSON data on success, None on failure
     """
     try:
-        print(f"[[API] Fetching: {url}")
+        print(f"[API] Fetching: {url}")
         response = urequests.get(url, timeout=timeout)
 
         if response.status_code == 200:
