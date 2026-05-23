@@ -21,29 +21,19 @@ class EPD_2in9_B:
     Manages SPI communication, buffers, and display commands.
     """
 
-    def __init__(
-        self, rst_pin=RST_PIN, dc_pin=DC_PIN, cs_pin=CS_PIN, busy_pin=BUSY_PIN
-    ):
-        """
-        Initialize the display with configurable pins.
-
-        Args:
-            rst_pin: Reset pin number
-            dc_pin: Data/Command pin number
-            cs_pin: Chip select pin number
-            busy_pin: Busy indicator pin number
-        """
+    def __init__(self):
+        """Initialize the display"""
         # Initialize Pins
-        self.reset_pin = Pin(rst_pin, Pin.OUT)
-        self.busy_pin = Pin(busy_pin, Pin.IN, Pin.PULL_UP)
-        self.cs_pin = Pin(cs_pin, Pin.OUT)
+        self.reset_pin = Pin(RST_PIN, Pin.OUT)
+        self.busy_pin = Pin(BUSY_PIN, Pin.IN, Pin.PULL_UP)
+        self.cs_pin = Pin(CS_PIN, Pin.OUT)
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
 
         # Initialize SPI
         self.spi = SPI(1)
         self.spi.init(baudrate=4_000_000)
-        self.dc_pin = Pin(dc_pin, Pin.OUT)
+        self.dc_pin = Pin(DC_PIN, Pin.OUT)
 
         # Initialize Buffers (Black and Red)
         # MONO_HLSB: Monochrome, LSB First
@@ -55,7 +45,6 @@ class EPD_2in9_B:
         self.imagered = framebuf.FrameBuffer(
             self.buffer_red, self.width, self.height, framebuf.MONO_HLSB
         )
-
         self.init()
 
     def _digital_write(self, pin, value):
@@ -65,7 +54,7 @@ class EPD_2in9_B:
         return pin.value()
 
     def _delay_ms(self, delaytime):
-        utime.sleep(delaytime / 1000.0)
+        utime.sleep(delaytime / 1_000.0)
 
     def _spi_writebyte(self, data):
         self.spi.write(bytearray(data))
@@ -73,8 +62,8 @@ class EPD_2in9_B:
     def _module_exit(self):
         self._digital_write(self.reset_pin, 0)
 
+    # Hardware reset
     def reset(self):
-        """Hardware reset sequence."""
         self._digital_write(self.reset_pin, 1)
         self._delay_ms(50)
         self._digital_write(self.reset_pin, 0)
@@ -102,12 +91,12 @@ class EPD_2in9_B:
 
     def _read_busy(self):
         """Wait until the display is not busy."""
-        print("busy")
+        print("[DISPLAY] busy")
         self._send_command(0x71)
         while self._digital_read(self.busy_pin) == 0:
             self._send_command(0x71)
             self._delay_ms(10)
-        print("busy release")
+        print("[DISPLAY] busy release")
 
     def _turn_on_display(self):
         self._send_command(0x12)
@@ -115,7 +104,7 @@ class EPD_2in9_B:
 
     def init(self):
         """Initialize the display panel."""
-        print("Display initialization")
+        print("[DISPLAY] Init")
         self.reset()
         self._send_command(0x04)  # Power on
         self._read_busy()  # wait for epaper IC to release idle signal
@@ -166,9 +155,10 @@ class EPD_2in9_B:
         self._read_busy()
         self._send_command(0x07)  # Deep sleep
         self._send_data(0xA5)
-        self._delay_ms(2000)
+
+        self._delay_ms(2_000)
         self._module_exit()
-        print("Display Sleepin")
+        print("[DISPLAY] Sleeping")
 
     # --- Generic Drawing Primitives ---
 
