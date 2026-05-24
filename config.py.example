@@ -16,10 +16,23 @@ AQICN_CITY_ID = "NUMBER"  # Using ID instead of city name for reliability
 LAT = 0.00000
 LON = 0.00000
 
+# --- Timing ---
+UPDATE_INTERVAL_SECONDS = 3600  # 1 hour
+RETRY_DELAY_SECONDS = 30  # Wait time on failure
+TIMEOUT_SECONDS = 30  # WiFi connection timeout
+HTTP_TIMEOUT_SECONDS = 10  # Per-request timeout for API calls
+
 # --- Display & Thresholds ---
 # Thresholds for highlighting metrics in RED
 # Key: API key name, Value: {'label': Display string, 'threshold': Trigger value}
-THRESHOLDS = {
+WEATHER_THRESHOLDS = {
+    "temp": {"label": "TEMP  : ", "threshold": 80, "unit": "F"},
+    "feels_like": {"label": "FEELS : ", "threshold": 80, "unit": "F"},
+    "humidity": {"label": "HUMID : ", "threshold": 70, "unit": "%"},
+    "wind_speed": {"label": "WIND  : ", "threshold": 25, "unit": "mph"},
+}
+
+AQI_THRESHOLDS = {
     "co":   {"label": "CO     : ", "threshold": 35},
     "no2":  {"label": "NO2    : ", "threshold": 200},
     "o3":   {"label": "O3     : ", "threshold": 160},
@@ -29,17 +42,3 @@ THRESHOLDS = {
 }
 
 TOTAL_AQI_THRESHOLD = 100
-
-# --- Timing ---
-UPDATE_INTERVAL_SECONDS = 3600  # 1 hour
-RETRY_DELAY_SECONDS = 30  # Wait time on failure
-TIMEOUT_SECONDS = 30  # WiFi connection timeout
-
-# --- Hardware Pins (Optional: Move to hardware_config if you swap screens) ---
-# Keeping these here for now as they are specific to the Waveshare driver used
-RST_PIN = 12
-DC_PIN = 8
-CS_PIN = 9
-BUSY_PIN = 13
-SPI_BUS = 1
-SPI_BAUDRATE = 4000_000

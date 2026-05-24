@@ -6,7 +6,8 @@ from config import (
     UPDATE_INTERVAL_SECONDS,
     RETRY_DELAY_SECONDS,
     OFFSET_HOURS,
-    THRESHOLDS,
+    WEATHER_THRESHOLDS,
+    AQI_THRESHOLDS,
     TOTAL_AQI_THRESHOLD,
     SSID,
     PASSWORD,
@@ -44,11 +45,37 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
 
     # --- Weather Section ---
     if weather_data:
+        # Description
         epd.draw_text_black(weather_data["desc"][:18], 5, 25)
-        epd.draw_text_black(f"TEMP  : {int(weather_data['temp'])}F", 5, 40)
-        epd.draw_text_black(f"FEELS : {int(weather_data['feels_like'])}F", 5, 55)
-        epd.draw_text_black(f"HUMID : {weather_data['humidity']}%", 5, 70)
-        epd.draw_text_black(f"WIND  : {round(weather_data['wind_speed'])}mph", 5, 85)
+
+        y_offset = 40
+        wtr = weather_data
+
+        for key, cfg in WEATHER_THRESHOLDS.items():
+            value = wtr.get(key)
+
+            if value is None:
+                text = cfg["label"] + "UNK"
+                is_high = False
+            else:
+                # Format number
+                num_str = (
+                    f"{value:.1f}" if isinstance(value, float) else f"{int(value)}"
+                )
+
+                # Append unit
+                unit = cfg.get("unit", "")
+                text = f"{cfg['label']}{num_str}{unit}"
+
+                # Check threshold
+                is_high = value >= cfg["threshold"]
+
+            if is_high:
+                epd.draw_rect(5, y_offset - 3, 120, 13, "red", filled=False)
+
+            epd.draw_text_conditional(text, 10, y_offset, is_high)
+            y_offset += 15
+
     else:
         epd.draw_text_black("Weather Error", 5, 25)
 
@@ -68,14 +95,14 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
         y_offset = 145
         iaqi = aqi_data.get("iaqi", {})
 
-        for key, cfg in THRESHOLDS.items():
+        for key, cfg in AQI_THRESHOLDS.items():
             val_data = iaqi.get(key)
             value = None
             if val_data:
                 value = val_data.get("v") if isinstance(val_data, dict) else val_data
 
             if value is None:
-                text = cfg["label"] + "N/A"
+                text = cfg["label"] + "UNK"
                 is_high = False
             else:
                 text = (
