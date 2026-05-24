@@ -77,7 +77,7 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
             y_offset += 15
 
     else:
-        epd.draw_text_black("Weather Error", 5, 25)
+        epd.draw_text_red("Weather Error", 5, 25)
 
     # --- AQI Section ---
     epd.draw_text_black("AIR QUALITY", 5, 115)
@@ -118,7 +118,7 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
             epd.draw_text_conditional(text, 10, y_offset, is_high)
             y_offset += 15
     else:
-        epd.draw_text_black("AQI Error", 5, 115)
+        epd.draw_text_red("AQI Error", 5, 115)
 
     # --- Timestamp ---
     daystamp, timestamp = get_local_time(offset_hours)
