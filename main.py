@@ -59,7 +59,9 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
         # Draw total AQI
         total_aqi = aqi_data["total_aqi"]
         is_high = total_aqi >= TOTAL_AQI_THRESHOLD
-        epd.clear_area(10, 130, 60, 12)
+
+        if is_high:
+            epd.draw_rect(5, 127, 120, 13, "red", filled=False)
         epd.draw_text_conditional(f"AQI    : {total_aqi}", 10, 130, is_high)
 
         # Draw individual pollutants
@@ -83,7 +85,9 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
                 )
                 is_high = value >= cfg["threshold"]
 
-            epd.clear_area(10, y_offset, 60, 12)
+            if is_high:
+                epd.draw_rect(5, y_offset - 3, 120, 13, "red", filled=False)
+
             epd.draw_text_conditional(text, 10, y_offset, is_high)
             y_offset += 15
     else:
