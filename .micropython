@@ -1,0 +1,5 @@
+# MicroPython project configuration
+# PORT can be: auto, /dev/ttyUSB0, /dev/ttyACM0, id:<serial>, etc.
+PORT=auto
+# BAUD is optional - mpremote auto-detects, but can be set for edge cases
+BAUD=115200
