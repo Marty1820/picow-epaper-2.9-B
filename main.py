@@ -44,7 +44,10 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
     epd.draw_text_black("WEATHER STATION", 5, 10)
 
     # --- Weather Section ---
-    if weather_data:
+    if not weather_data:
+        epd.draw_text_red("WEATHER UPDATE FAILED", 5, 25)
+        epd.draw_text_black("Check connectivity", 5, 40)
+    else:
         # Description
         epd.draw_text_black(weather_data["desc"][:18], 5, 25)
 
@@ -76,13 +79,12 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
             epd.draw_text_conditional(text, 10, y_offset, is_high)
             y_offset += 15
 
-    else:
-        epd.draw_text_red("Weather Error", 5, 25)
-
     # --- AQI Section ---
     epd.draw_text_black("AIR QUALITY", 5, 115)
 
-    if aqi_data:
+    if not aqi_data:
+        epd.draw_text_red("AQI UPDATE FAILED", 5, 115)
+    else:
         # Draw total AQI
         total_aqi = aqi_data["total_aqi"]
         is_high = total_aqi >= TOTAL_AQI_THRESHOLD
@@ -117,8 +119,6 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
 
             epd.draw_text_conditional(text, 10, y_offset, is_high)
             y_offset += 15
-    else:
-        epd.draw_text_red("AQI Error", 5, 115)
 
     # --- Timestamp ---
     daystamp, timestamp = get_local_time(offset_hours)
@@ -133,6 +133,9 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
 
 def main_loop():
     """Main application loop."""
+    retry_count = 0
+    base_delay = RETRY_DELAY_SECONDS
+
     print("=== Weather Station Starting ===")
 
     while True:
@@ -140,9 +143,14 @@ def main_loop():
             # 1. Network Connection
             wlan = connect_wifi(SSID, PASSWORD)
             if not wlan:
-                print("[MAIN] No Wi-Fi. Retrying in 60s...")
-                utime.sleep(RETRY_DELAY_SECONDS)
+                retry_count += 1
+                delay = min(base_delay * (2**retry_count), 300)
+                print(f"[MAIN] No Wi-Fi. Retrying in {delay}s...")
+                utime.sleep(delay)
                 continue
+
+            # Reset retry count on success
+            retry_count = 0
 
             # 2. Time Synchronization
             if not sync_clock():
