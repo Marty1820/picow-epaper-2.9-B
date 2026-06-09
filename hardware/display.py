@@ -8,11 +8,15 @@ import utime
 EPD_WIDTH = 128
 EPD_HEIGHT = 296
 
-# Hardware pin definitions (adjust for your hardware)
+# Hardware pin definitions
 RST_PIN = 12
 DC_PIN = 8
 CS_PIN = 9
 BUSY_PIN = 13
+
+# Timeout constants (in ms)
+BUSY_TIMEOUT_MS = 30_000
+RESET_DELAY_MS = 50
 
 
 class EPD_2in9_B:
@@ -22,7 +26,9 @@ class EPD_2in9_B:
     """
 
     def __init__(self):
-        """Initialize the display"""
+        """Initialize the display hardware and buffers."""
+        print("[DISPLAY] Initializing hardware...")
+
         # Initialize Pins
         self.reset_pin = Pin(RST_PIN, Pin.OUT)
         self.busy_pin = Pin(BUSY_PIN, Pin.IN, Pin.PULL_UP)
@@ -30,21 +36,29 @@ class EPD_2in9_B:
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
 
+        # Ensure CS is high initially
+        self._digital_write(self.cs_pin, 1)
+
         # Initialize SPI
         self.spi = SPI(1)
         self.spi.init(baudrate=4_000_000)
         self.dc_pin = Pin(DC_PIN, Pin.OUT)
 
-        # Initialize Buffers (Black and Red)
-        # MONO_HLSB: Monochrome, LSB First
-        self.buffer_black = bytearray(self.height * self.width // 8)
-        self.buffer_red = bytearray(self.height * self.width // 8)
+        # Allocate Buffers (Black and Red layers)
+        # Size calculation: (Width * Height) / 8 bytes
+        buffer_size = self.height * self.width // 8
+        self.buffer_black = bytearray(buffer_size)
+        self.buffer_red = bytearray(buffer_size)
+
+        # Initialize FrameBuffers pointing to static bytearrays
         self.imageblack = framebuf.FrameBuffer(
             self.buffer_black, self.width, self.height, framebuf.MONO_HLSB
         )
         self.imagered = framebuf.FrameBuffer(
             self.buffer_red, self.width, self.height, framebuf.MONO_HLSB
         )
+
+        # Initialize Panel
         self.init()
 
     def _digital_write(self, pin, value):
@@ -56,56 +70,83 @@ class EPD_2in9_B:
     def _delay_ms(self, delaytime):
         utime.sleep(delaytime / 1_000.0)
 
-    def _spi_writebyte(self, data):
-        self.spi.write(bytearray(data))
+    def _spi_write_byte(self, data):
+        """Write a single byte to SPI."""
+        self.spi.write(bytes([data]))
+
+    def _spi_write_block(self, buf):
+        """Write a block of data efficiently."""
+        if isinstance(buf, list):
+            self.spi.write(bytes(buf))
+        else:
+            self.spi.write(buf)
 
     def _module_exit(self):
+        """Hard power off the module."""
         self._digital_write(self.reset_pin, 0)
 
-    # Hardware reset
     def reset(self):
+        """Hardware reset sequence."""
         self._digital_write(self.reset_pin, 1)
-        self._delay_ms(50)
+        self._delay_ms(RESET_DELAY_MS)
         self._digital_write(self.reset_pin, 0)
         self._delay_ms(2)
         self._digital_write(self.reset_pin, 1)
-        self._delay_ms(50)
+        self._delay_ms(RESET_DELAY_MS)
 
     def _send_command(self, command):
+        """Send a command byte."""
         self._digital_write(self.dc_pin, 0)
         self._digital_write(self.cs_pin, 0)
-        self._spi_writebyte([command])
+        self._spi_write_byte(command)
         self._digital_write(self.cs_pin, 1)
 
     def _send_data(self, data):
+        """Send a single data byte."""
         self._digital_write(self.dc_pin, 1)
         self._digital_write(self.cs_pin, 0)
-        self._spi_writebyte([data])
+        self._spi_write_byte(data)
         self._digital_write(self.cs_pin, 1)
 
     def _send_data_block(self, buf):
+        """Send a block of data (buffer)."""
         self._digital_write(self.dc_pin, 1)
         self._digital_write(self.cs_pin, 0)
-        self.spi.write(bytearray(buf))
+        self._spi_write_block(buf)
         self._digital_write(self.cs_pin, 1)
 
     def _read_busy(self):
-        """Wait until the display is not busy."""
-        print("[DISPLAY] busy")
-        self._send_command(0x71)
-        while self._digital_read(self.busy_pin) == 0:
-            self._send_command(0x71)
-            self._delay_ms(10)
-        print("[DISPLAY] busy release")
+        """
+        Wait until the display is not busy (BUSY pin goes HIGH).
+        Includes a safety timeout to prevent hanging the MCU.
+        """
+        start_time = utime.ticks_ms()
+        print("[DISPLAY] Waiting for busy release...")
+
+        while True:
+            # Check if BUSY pin is High (Released)
+            if self._digital_read(self.busy_pin) != 0:
+                print("[DISPLAY] Busy released.")
+                return
+
+            # Safety timeout check
+            if utime.ticks_diff(utime.ticks_ms(), start_time) > BUSY_TIMEOUT_MS:
+                print("[DISPLAY] ERROR: Busy timeout! Driver may be unresponsive.")
+                raise TimeoutError("E-Paper Busy signal timed out.")
+
+            utime.sleep_ms(10)
 
     def _turn_on_display(self):
-        self._send_command(0x12)
-        self._read_busy()
+        """Trigger the display refresh sequence."""
+        self._send_command(0x12)  # Display Refresh
+        self._read_busy()  # Wait for the panel to finish drawing
 
     def init(self):
-        """Initialize the display panel."""
-        print("[DISPLAY] Init")
+        """Initialize the display panel registers."""
+        print("[DISPLAY] Running panel initialization...")
         self.reset()
+
+        # Power on sequence
         self._send_command(0x04)  # Power on
         self._read_busy()  # wait for epaper IC to release idle signal
 
@@ -121,46 +162,58 @@ class EPD_2in9_B:
         self._send_command(0x50)  # VCOM and Data Interval
         self._send_data(0x77)  # WB mode settings
 
-        return 0
+        print("[DISPLAY] Initialization complete.")
 
     def display(self):
-        """Send buffers to display and refresh."""
+        """Send buffer contents to the display and trigger refresh."""
+        # Send Black Data
         self._send_command(0x10)
         self._send_data_block(self.buffer_black)
 
+        # Send Red Data
         self._send_command(0x13)
         self._send_data_block(self.buffer_red)
 
+        # Trigger Refresh
         self._turn_on_display()
 
     def clear(self, color_black=0xFF, color_red=0xFF):
         """
-        Clear the display with specified colors
-
+        Clear the display with specified colors.
         Args:
-            color_black: Color for black buffer (0xFF=White, 0x00=Black)
-            color_red: Color for red buffer (0xFF=White, 0x00=Red)
+            color_black: 0xFF (White), 0x00 (Black)
+            color_red: 0xFF (White/Clear), 0x00 (Red)
         """
-        self._send_command(0x10)
-        self._send_data_block([color_black] * self.height * int(self.width / 8))
+        # Generate full blocks of the target color
+        size = self.height * (self.width // 8)
+        fill_black = bytes([color_black]) * size
 
+        self._send_command(0x10)
+        self._send_data_block(fill_black)
+
+        fill_red = bytes([color_red]) * size
         self._send_command(0x13)
-        self._send_data_block([color_red] * self.height * int(self.width / 8))
+        self._send_data_block(fill_red)
 
         self._turn_on_display()
 
     def sleep(self):
-        """Put display into deep sleep."""
+        """Put display into deep sleep to save power."""
+        print("[DISPLAY] Entering Deep Sleep...")
+
         self._send_command(0x02)  # Power off
         self._read_busy()
+
         self._send_command(0x07)  # Deep sleep
         self._send_data(0xA5)
 
+        # Small delay to allow internal capacitor to discharge
         self._delay_ms(2_000)
+
         self._module_exit()
         print("[DISPLAY] Sleeping")
 
-    # --- Generic Drawing Primitives ---
+    # --- Drawing Primitives ---
 
     def clear_area(self, x, y, width, height):
         """Clear a rectangular area on both buffers."""
@@ -178,7 +231,6 @@ class EPD_2in9_B:
     def draw_text_conditional(self, text, x, y, is_high=False):
         """
         Draw text conditionally in black or red based on flag.
-
         Args:
             text: String to draw
             x: X coordinate
@@ -193,7 +245,6 @@ class EPD_2in9_B:
     def draw_line(self, x1, y1, x2, y2, color="black"):
         """
         Draw a line between two points.
-
         Args:
             x1, y1: Start coordinates
             x2, y2: End coordinates
@@ -205,7 +256,6 @@ class EPD_2in9_B:
     def draw_rect(self, x, y, w, h, color="black", filled=False):
         """
         Draw a rectangle.
-
         Args:
             x, y: Top-left coordinates
             w, h: Width and height
