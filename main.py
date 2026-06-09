@@ -41,7 +41,7 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
     epd.imagered.fill(0xFF)
 
     # --- Header ---
-    epd.draw_text_black("WEATHER STATION", 5, 10)
+    epd.draw_text_black("WEATHER STATION", 5, 20)
 
     # --- Weather Section ---
     if not weather_data:
@@ -49,9 +49,9 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
         epd.draw_text_black("Check connectivity", 5, 40)
     else:
         # Description
-        epd.draw_text_black(weather_data["desc"][:18], 5, 25)
+        epd.draw_text_black(weather_data["desc"][:18], 5, 35)
 
-        y_offset = 40
+        y_offset = 50
         wtr = weather_data
 
         for key, cfg in WEATHER_THRESHOLDS.items():
@@ -79,6 +79,7 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
             epd.draw_text_conditional(text, 10, y_offset, is_high)
             y_offset += 15
 
+    epd.draw_line(5, 110, 129, 110)
     # --- AQI Section ---
     epd.draw_text_black("AIR QUALITY", 5, 115)
 
@@ -122,6 +123,7 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
 
     # --- Timestamp ---
     daystamp, timestamp = get_local_time(offset_hours)
+    epd.draw_line(5, 250, 129, 250)
     epd.draw_text_black("Last Update:", 10, 255)
     epd.draw_text_black(daystamp, 10, 270)
     epd.draw_text_black(timestamp, 10, 285)
