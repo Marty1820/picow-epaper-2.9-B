@@ -32,12 +32,12 @@ WEATHER_THRESHOLDS = {
 }
 
 AQI_THRESHOLDS = {
-    "co":   {"label": "CO     : ", "threshold": 35},
-    "no2":  {"label": "NO2    : ", "threshold": 200},
-    "o3":   {"label": "O3     : ", "threshold": 160},
-    "pm10": {"label": "PM10   : ", "threshold": 80},
-    "pm25": {"label": "PM2.5  : ", "threshold": 30},
-    "so2":  {"label": "SO2    : ", "threshold": 270},
+    "co":   {"label": "CO     : ", "threshold": 12},
+    "no2":  {"label": "NO2    : ", "threshold": 361},
+    "o3":   {"label": "O3     : ", "threshold": 86},
+    "pm10": {"label": "PM10   : ", "threshold": 255},
+    "pm25": {"label": "PM2.5  : ", "threshold": 55},
+    "so2":  {"label": "SO2    : ", "threshold": 286},
 }
 
 TOTAL_AQI_THRESHOLD = 100
