@@ -80,44 +80,66 @@ def render_display(epd, weather_data, aqi_data, offset_hours):
             y_offset += 15
 
     epd.draw_line(5, 110, 129, 110)
+
     # --- AQI Section ---
     epd.draw_text_black("AIR QUALITY", 5, 115)
 
     if not aqi_data:
-        epd.draw_text_red("AQI UPDATE FAILED", 5, 115)
+        epd.draw_text_red("AQI UPDATE FAILED", 5, 130)
     else:
-        # Draw total AQI
-        total_aqi = aqi_data["total_aqi"]
-        is_high = total_aqi >= TOTAL_AQI_THRESHOLD
+        # Handle Total AQI
+        total_aqi = aqi_data.get("total_aqi")
+        is_high_total = False
 
-        if is_high:
+        if isinstance(total_aqi, (int, float)):
+            is_high_total = total_aqi >= TOTAL_AQI_THRESHOLD
+            aqi_text = f"AQI    : {int(total_aqi)}"
+        else:
+            # It might be a string "-", None, or "N/A"
+            aqi_text = "AQI    : -"
+
+        if is_high_total:
             epd.draw_rect(5, 127, 120, 13, "red", filled=False)
-        epd.draw_text_conditional(f"AQI    : {total_aqi}", 10, 130, is_high)
 
-        # Draw individual pollutants
+        epd.draw_text_conditional(aqi_text, 10, 130, is_high_total)
+
+        # Handle Individual Pollutants
         y_offset = 145
         iaqi = aqi_data.get("iaqi", {})
 
         for key, cfg in AQI_THRESHOLDS.items():
             val_data = iaqi.get(key)
             value = None
-            if val_data:
-                value = val_data.get("v") if isinstance(val_data, dict) else val_data
 
+            if isinstance(val_data, dict):
+                value = val_data.get("v")
+            elif isinstance(val_data, (int, float)):
+                value = val_data
+
+            # Process value
             if value is None:
                 text = cfg["label"] + "UNK"
                 is_high = False
             else:
-                text = (
-                    f"{cfg['label']}{value:.1f}"
-                    if isinstance(value, float)
-                    else f"{cfg['label']}{int(value)}"
-                )
-                is_high = value >= cfg["threshold"]
+                # Ensure we have a float for comparison
+                try:
+                    num_val = float(value)
+                    is_high = num_val >= cfg["threshold"]
 
+                    # Format string
+                    if num_val == int(num_val):
+                        text = f"{cfg['label']}{int(num_val)}"
+                    else:
+                        text = f"{cfg['label']}{num_val:.1f}"
+                except (ValueError, TypeError):
+                    text = cfg["label"] + "-"
+                    is_high = False
+
+            # Draw rectangle if high
             if is_high:
                 epd.draw_rect(5, y_offset - 3, 120, 13, "red", filled=False)
 
+            # Draw text
             epd.draw_text_conditional(text, 10, y_offset, is_high)
             y_offset += 15
 

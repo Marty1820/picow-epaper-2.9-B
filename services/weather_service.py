@@ -2,7 +2,6 @@
 # Handles API URL construction, data fetching, and parsing
 
 from config import (
-    OPENWEATHER_API_KEY,
     LAT,
     LON,
     AQICN_CITY_ID,
@@ -14,19 +13,29 @@ from services.api_client import fetch_json
 
 def get_weather_data():
     """
-    Fetches current weather data from OpenWeatherMap OneCall API.
+    Fetches current weather data from Open-Meteo API.
 
     Returns:
         dict or None: Parsed weather data on success, None on failure
     """
-    # Using the OneCall 3.0 endpoint
-    # Excluding minutely, hourly, daily, alerts to save bandwidth
-    url = (
-        f"https://api.openweathermap.org/data/3.0/onecall?"
-        f"lat={LAT}&lon={LON}&appid={OPENWEATHER_API_KEY}"
-        f"&units=imperial&exclude=minutely,hourly,daily,alerts"
-    )
-    return fetch_json(url, timeout=HTTP_TIMEOUT_SECONDS)
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": LAT,
+        "longitude": LON,
+        "current": [
+            "temperature_2m",
+            "relative_humidity_2m",
+            "apparent_temperature",
+            "wind_speed_10m",
+            "weather_code",
+            "cloud_cover",
+        ],
+        "forecast_days": 1,
+        "wind_speed_unit": "mph",
+        "temperature_unit": "fahrenheit",
+        "precipitation_unit": "inch",
+    }
+    return fetch_json(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
 
 
 def get_aqi_data():
@@ -37,8 +46,9 @@ def get_aqi_data():
         dict or None Parsed AQI data on success, None on failure
     """
     # Fetching by City ID
-    url = f"https://api.waqi.info/feed/@{AQICN_CITY_ID}/?token={AQICN_API_KEY}"
-    return fetch_json(url, timeout=HTTP_TIMEOUT_SECONDS)
+    url = f"https://api.waqi.info/feed/@{AQICN_CITY_ID}/"
+    params = {"token": AQICN_API_KEY}
+    return fetch_json(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
 
 
 def fetch_all_data():
@@ -66,14 +76,39 @@ def format_weather_display(weather_data):
     if not weather_data or "current" not in weather_data:
         return None
 
+    WEATHER_CODES = {
+        0: "Clear Sky",
+        1: "Mainly Clear",
+        2: "Partly Cloudy",
+        3: "Overcast",
+        45: "Foggy",
+        48: "Depositing Rime Fog",
+        51: "Light Drizzle",
+        53: "Moderate Drizzle",
+        55: "Dense Drizzle",
+        61: "Slight Rain",
+        63: "Rain",
+        65: "Heavy Rain",
+        71: "Slight Snow",
+        73: "Snow",
+        75: "Heavy Snow",
+        80: "Slight Showers",
+        81: "Showers",
+        82: "Violent Showers",
+        95: "Thunderstorm",
+        96: "Thunderstorm w/ Hail",
+    }
+
     try:
         current = weather_data["current"]
+        raw_code = current.get("weather_code", 0)
+
         return {
-            "temp": current["temp"],
-            "desc": current["weather"][0]["description"],
-            "feels_like": current["feels_like"],
-            "humidity": current["humidity"],
-            "wind_speed": current["wind_speed"],
+            "temp": current["temperature_2m"],
+            "desc": WEATHER_CODES.get(raw_code, f"Code: {raw_code}"),
+            "feels_like": current["apparent_temperature"],
+            "humidity": current["relative_humidity_2m"],
+            "wind_speed": current["wind_speed_10m"],
         }
     except KeyError as e:
         print(f"[WEATHER] Missing key: {e}")
@@ -94,13 +129,43 @@ def format_aqi_display(aqi_data):
         return None
 
     try:
-        aqi_data_inner = aqi_data.get("data")
-        if not isinstance(aqi_data_inner, dict):
+        data_inner = aqi_data.get("data")
+        if not isinstance(data_inner, dict):
+            print(f"[WEATHER] 'data' field type: {type(data_inner).__name__}")
             raise TypeError("AQI 'data' field is not a dictionary")
 
+        def get_num_val(val):
+            if val is None:
+                return None
+            if isinstance(val, (int, float)):
+                return val
+            if isinstance(val, str):
+                if val == "-" or val.strip() == "":
+                    return None
+                try:
+                    return float(val)
+                except ValueError:
+                    return None
+            return None
+
+        raw_total = data_inner.get("aqi", {})
+        total_aqi = get_num_val(raw_total)
+
+        raw_iaqi = data_inner.get("iaqi", {})
+        if not isinstance(raw_iaqi, dict):
+            print("[WEATHER] 'iaqi' is not a dictionary!")
+            raw_iaqi = {}
+
+        cleaned_iaqi = {}
+        for key, val in raw_iaqi.items():
+            cleaned_iaqi[key] = get_num_val(val.get("v"))
+        else:
+            cleaned_iaqi[key] = get_num_val(val)
+
+        print(f"[WEATHER] Formatted {len(cleaned_iaqi)} pollutants")
         return {
-            "total_aqi": aqi_data_inner.get("aqi", 0),
-            "iaqi": aqi_data_inner.get("iaqi", {}),
+            "total_aqi": total_aqi,
+            "iaqi": cleaned_iaqi,
         }
     except (KeyError, TypeError) as e:
         print(f"[WEATHER] Parse error: {e}")

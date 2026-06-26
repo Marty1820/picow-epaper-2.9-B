@@ -8,7 +8,6 @@ OFFSET_HOURS = 0  # UTC offset in hours
 # --- API Keys & Endpoints ---
 # WARNING: In a real production environment, consider using secure storage
 # or environment variables if your platform supports it, rather than plain text.
-OPENWEATHER_API_KEY = "Get from https://home.openweathermap.org/api_keys"
 AQICN_API_KEY = "https://aqicn.org/json-api/doc/"  # Note: Checked original, kept as is
 AQICN_CITY_ID = "NUMBER"  # Using ID instead of city name for reliability
 

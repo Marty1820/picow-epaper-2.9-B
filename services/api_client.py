@@ -1,9 +1,9 @@
 # Generica HTTP client for MicroPython
 
-import urequests
+import requests
 
 
-def fetch_json(url, timeout=10):
+def fetch_json(url, params=None, timeout=10):
     """
     Fetches JSON data from a URL.
 
@@ -15,8 +15,19 @@ def fetch_json(url, timeout=10):
         dict or None: Parsed JSON data on success, None on failure
     """
     try:
-        print(f"[API] Fetching: {url}")
-        response = urequests.get(url, timeout=timeout)
+        if params:
+            query_parts = []
+            for k, v in params.items():
+                if isinstance(v, list):
+                    v = ",".join(str(item) for item in v)
+                query_parts.append(f"{k}={v}")
+            query_string = "&".join(query_parts)
+            full_url = f"{url}?{query_string}"
+        else:
+            full_url = url
+
+        print(f"[API] Fetching: {full_url}")
+        response = requests.get(full_url, timeout=timeout)
 
         if response.status_code == 200:
             data = response.json()
@@ -44,7 +55,7 @@ def fetch_text(url, timeout=10):
     """
     try:
         print(f"[API] Fetching: {url}")
-        response = urequests.get(url, timeout=timeout)
+        response = requests.get(url, timeout=timeout)
 
         if response.status_code == 200:
             text = response.text

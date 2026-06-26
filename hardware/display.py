@@ -15,7 +15,6 @@ CS_PIN = 9
 BUSY_PIN = 13
 
 # Timeout constants (in ms)
-BUSY_TIMEOUT_MS = 30_000
 RESET_DELAY_MS = 50
 
 
@@ -35,9 +34,6 @@ class EPD_2in9_B:
         self.cs_pin = Pin(CS_PIN, Pin.OUT)
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
-
-        # Ensure CS is high initially
-        self._digital_write(self.cs_pin, 1)
 
         # Initialize SPI
         self.spi = SPI(1)
@@ -75,7 +71,7 @@ class EPD_2in9_B:
         self.spi.write(bytes([data]))
 
     def _spi_write_block(self, buf):
-        """Write a block of data efficiently."""
+        """Write a block of data to SPI."""
         if isinstance(buf, list):
             self.spi.write(bytes(buf))
         else:
@@ -84,7 +80,9 @@ class EPD_2in9_B:
     def _module_exit(self):
         """Hard power off the module."""
         self._digital_write(self.reset_pin, 0)
+        self.spi.deinit()
 
+    # Hardware reset
     def reset(self):
         """Hardware reset sequence."""
         self._digital_write(self.reset_pin, 1)
@@ -112,29 +110,17 @@ class EPD_2in9_B:
         """Send a block of data (buffer)."""
         self._digital_write(self.dc_pin, 1)
         self._digital_write(self.cs_pin, 0)
-        self._spi_write_block(buf)
+        self.spi.write(buf)
         self._digital_write(self.cs_pin, 1)
 
     def _read_busy(self):
-        """
-        Wait until the display is not busy (BUSY pin goes HIGH).
-        Includes a safety timeout to prevent hanging the MCU.
-        """
-        start_time = utime.ticks_ms()
-        print("[DISPLAY] Waiting for busy release...")
-
-        while True:
-            # Check if BUSY pin is High (Released)
-            if self._digital_read(self.busy_pin) != 0:
-                print("[DISPLAY] Busy released.")
-                return
-
-            # Safety timeout check
-            if utime.ticks_diff(utime.ticks_ms(), start_time) > BUSY_TIMEOUT_MS:
-                print("[DISPLAY] ERROR: Busy timeout! Driver may be unresponsive.")
-                raise TimeoutError("E-Paper Busy signal timed out.")
-
-            utime.sleep_ms(10)
+        """Wait until the display is not busy."""
+        print("[DISPLAY] busy")
+        self._send_command(0x71)
+        while self._digital_read(self.busy_pin) == 0:
+            self._send_command(0x71)
+            self._delay_ms(10)
+        print("[DISPLAY] busy release")
 
     def _turn_on_display(self):
         """Trigger the display refresh sequence."""
@@ -145,7 +131,6 @@ class EPD_2in9_B:
         """Initialize the display panel registers."""
         print("[DISPLAY] Running panel initialization...")
         self.reset()
-
         # Power on sequence
         self._send_command(0x04)  # Power on
         self._read_busy()  # wait for epaper IC to release idle signal
@@ -163,6 +148,7 @@ class EPD_2in9_B:
         self._send_data(0x77)  # WB mode settings
 
         print("[DISPLAY] Initialization complete.")
+        return 0
 
     def display(self):
         """Send buffer contents to the display and trigger refresh."""
@@ -178,38 +164,21 @@ class EPD_2in9_B:
         self._turn_on_display()
 
     def clear(self, color_black=0xFF, color_red=0xFF):
-        """
-        Clear the display with specified colors.
-        Args:
-            color_black: 0xFF (White), 0x00 (Black)
-            color_red: 0xFF (White/Clear), 0x00 (Red)
-        """
-        # Generate full blocks of the target color
-        size = self.height * (self.width // 8)
-        fill_black = bytes([color_black]) * size
-
-        self._send_command(0x10)
-        self._send_data_block(fill_black)
-
-        fill_red = bytes([color_red]) * size
-        self._send_command(0x13)
-        self._send_data_block(fill_red)
-
-        self._turn_on_display()
+        """Clear the display with specified colors."""
+        self.buffer_black[:] = bytes([color_black]) * len(self.buffer_black)
+        self.buffer_red[:] = bytes([color_red]) * len(self.buffer_red)
+        self.display()
 
     def sleep(self):
         """Put display into deep sleep to save power."""
         print("[DISPLAY] Entering Deep Sleep...")
-
         self._send_command(0x02)  # Power off
         self._read_busy()
-
         self._send_command(0x07)  # Deep sleep
         self._send_data(0xA5)
 
         # Small delay to allow internal capacitor to discharge
         self._delay_ms(2_000)
-
         self._module_exit()
         print("[DISPLAY] Sleeping")
 
@@ -231,6 +200,7 @@ class EPD_2in9_B:
     def draw_text_conditional(self, text, x, y, is_high=False):
         """
         Draw text conditionally in black or red based on flag.
+
         Args:
             text: String to draw
             x: X coordinate
@@ -245,6 +215,7 @@ class EPD_2in9_B:
     def draw_line(self, x1, y1, x2, y2, color="black"):
         """
         Draw a line between two points.
+
         Args:
             x1, y1: Start coordinates
             x2, y2: End coordinates
@@ -256,6 +227,7 @@ class EPD_2in9_B:
     def draw_rect(self, x, y, w, h, color="black", filled=False):
         """
         Draw a rectangle.
+
         Args:
             x, y: Top-left coordinates
             w, h: Width and height
