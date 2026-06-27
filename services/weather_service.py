@@ -142,38 +142,9 @@ def format_aqi_display(aqi_data):
             print(f"[WEATHER] 'data' field type: {type(data_inner).__name__}")
             raise TypeError("AQI 'data' field is not a dictionary")
 
-        def get_num_val(val):
-            if val is None:
-                return None
-            if isinstance(val, (int, float)):
-                return val
-            if isinstance(val, str):
-                if val == "-" or val.strip() == "":
-                    return None
-                try:
-                    return float(val)
-                except ValueError:
-                    return None
-            return None
-
-        raw_total = data_inner.get("aqi", {})
-        total_aqi = get_num_val(raw_total)
-
-        raw_iaqi = data_inner.get("iaqi", {})
-        if not isinstance(raw_iaqi, dict):
-            print("[WEATHER] 'iaqi' is not a dictionary!")
-            raw_iaqi = {}
-
-        cleaned_iaqi = {}
-        for key, val in raw_iaqi.items():
-            cleaned_iaqi[key] = get_num_val(val.get("v"))
-        else:
-            cleaned_iaqi[key] = get_num_val(val)
-
-        print(f"[WEATHER] Formatted {len(cleaned_iaqi)} pollutants")
         return {
-            "total_aqi": total_aqi,
-            "iaqi": cleaned_iaqi,
+            "total_aqi": data_inner.get("aqi", 0),
+            "iaqi": data_inner.get("iaqi", {}),
         }
     except (KeyError, TypeError) as e:
         print(f"[WEATHER] Parse error: {e}")
